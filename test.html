@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Data Visualization</title>
+    <style>
+        /* CSS to make the dashboard take up 1/4 of the screen width */
+        .dashboard-container {
+            width: 50%; /* 1/2 of the screen width */
+            height: 40vh; /* 50% of the viewport height */
+            padding: 10px;
+        }
+
+        .dashboard-row {
+            display: flex; /* Use flexbox for layout */
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h2>OutSystems Dashboard</h2>
+    <div class="dashboard-row">
+        <!-- Age Count Bar Chart -->
+        <div class="dashboard-container">
+            <h3>Age Count Bar Chart</h3>
+            <canvas id="ageChart" width="400" height="200"></canvas>
+        </div>
+
+        <!-- Gender Proportion Pie Chart -->
+        <div class="dashboard-container">
+            <h3>Gender Proportion Pie Chart</h3>
+            <canvas id="genderChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // API endpoint
+        const apiUrl = "https://smuedu-dev.outsystemsenterprise.com/CustomerMod/rest/GetCustomers/GetAllCustomers";
+    
+        // Make an API request to get customer data
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(res => {
+                let data = res.data.customers;
+                
+                // Extract ages from the JSON data
+                const ages = data.map(customer => customer.age);
+    
+                // Count the occurrences of each age
+                const ageCounts = {};
+                ages.forEach(age => {
+                    ageCounts[age] = (ageCounts[age] || 0) + 1;
+                });
+    
+                // Prepare data for the bar chart
+                const ageLabels = Object.keys(ageCounts);
+                const ageData = ageLabels.map(age => ageCounts[age]);
+    
+                // Create a bar chart using Chart.js
+                const barCtx = document.getElementById('ageChart').getContext('2d');
+                new Chart(barCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ageLabels,
+                        datasets: [{
+                            label: 'Count',
+                            data: ageData,
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                stepSize: 1
+                            }
+                        }
+                    }
+                });
+    
+                const males = data.filter(customer => customer.gender === 'Male').length;
+                const females = data.filter(customer => customer.gender === 'Female').length;
+
+                // Prepare data for the pie chart
+                const genderData = [males, females];
+                const genderLabels = ['Male', 'Female'];
+                const genderBackgroundColor = ['rgba(75, 192, 192, 0.2)', 'rgba(255, 99, 132, 0.2'];
+
+                // Create a pie chart using Chart.js
+                const pieCtx = document.getElementById('genderChart').getContext('2d');
+                new Chart(pieCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: genderLabels,
+                        datasets: [{
+                            data: genderData,
+                            backgroundColor: genderBackgroundColor
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'right',
+                                labels: {
+                                    generateLabels: function (chart) {
+                                        const data = chart.data;
+                                        if (data.labels.length && data.datasets.length) {
+                                            return data.labels.map(function (label, i) {
+                                                const value = data.datasets[0].data[i];
+                                                return {
+                                                    text: `${label}: ${value}`,
+                                                };
+                                            });
+                                        }
+                                        return [];
+                                    },
+                                    fontSize: 5, // Set the font size for legend labels
+                                }
+                            }
+                        }
+                    }
+                })
+            })
+            .catch(error => {
+                console.error('Error fetching API data:', error);
+            });
+    </script>
+</body>
+</html>
